@@ -321,8 +321,20 @@ class VoiceConnectionState:
             )
             return
 
-        self.endpoint, _, _ = endpoint.rpartition(':')
+        # Discord may give us an endpoint with a non-standard port. We used to strip it off, but that causes an error: WSMessage(type=<WSMsgType.CLOSE: 8>, data=4006, extra='Session is no longer valid.')
+        # Just use the endpoint as is.
+        self.endpoint = endpoint
         if self.endpoint.startswith('wss://'):
+            #
+            # According to discord's documentation, we won't get the wss:// in the voice server update response.
+            # https://discord.com/developers/docs/topics/voice-connections#retrieving-voice-server-information-example-voice-server-update-payload
+            # Quote:
+            #   "Unlike the gateway endpoint we receive in an HTTP Get Gateway request, the endpoint
+            #   received from our Voice Server Update payload does not contain a URL protocol, so some 
+            #   libraries may require manually prepending it with "wss://" before connecting."
+            #
+            # Later in the DiscordVoiceWebSocket class, we add the wss:// to the provided endpoint.
+            #
             # Just in case, strip it off since we're going to add it later
             self.endpoint = self.endpoint[6:]
 
